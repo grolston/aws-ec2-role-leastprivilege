@@ -1,0 +1,72 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Least Privilege EC2 Instance Profile
+
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Amazon EC2 configuration
+        Parameters:
+          - pCustomerName
+          - pEnvironment
+          - pGitUrl
+    ParameterLabels:
+      pCustomerName:
+        default: Customer
+      pEnvironment:
+        default: Environment
+      pGitUrl:
+        default: Code URL
+
+Parameters:
+  pEnvironment:
+    Type: String
+    Description: "Environment tag representing Production, Development, QA, Staging, or DR"
+    AllowedValues:
+      - Production
+      - Development
+      - QA
+      - Stage
+      - DR
+    Default: DR
+  pGitUrl:
+    Type: String
+    Description: The Project URL for the template
+    Default: "https://github.com/grolston/aws-ec2-role-leastprivilege"
+  pCustomerName:
+    Type: String
+    Description: "Customer name for tagging resources"
+
+Resources:
+
+  rEC2LPIPRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub Ec2Role-LP-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Customer
+          Value: !Ref pCustomerName
+        - Key: Environment
+          Value: !Ref pEnvironment
+        - Key: Code Uri
+          Value: !Ref pGitUrl
+
+  rEc2LPIPProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub "Ec2Role-LP-${AWS::StackName}"
+      Path: /
+      Roles:
+        - !Ref rEC2LPIPRole
