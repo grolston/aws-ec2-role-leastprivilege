@@ -1,0 +1,25 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SSM hybrid role for activation
+
+Resources:
+
+  rEC2SSMHybridRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub SsmHybrid-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              "StringEquals":
+                "aws:SourceAccount":
+                  !Sub "${AWS::AccountId}"
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy
